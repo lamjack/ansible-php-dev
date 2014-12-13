@@ -1,0 +1,24 @@
+---
+
+# See: https://github.com/pdezwart/php-amqp/issues/127
+- name: Checkout latest stable librabbitmq code (C client).
+  git: >
+    repo=git://github.com/alanxz/rabbitmq-c.git
+    recursive=yes
+    version=v0.5.2
+    depth=1
+    dest=/tmp/rabbitmq-c
+
+# Install on /usr/lib as PHP throws a warning when installed /usr/local/lib.
+#
+# PHP Warning: PHP Startup: Unable to load dynamic library
+# '<version-path>/lib/php/extensions/no-debug-non-zts-20131226/amqp.so' -
+# librabbitmq.so.1: cannot open shared object file: No such file or directory in Unknown on line 0
+- name: Compile librabbitmq.
+  shell: >
+    mkdir build;
+    cd build;
+    cmake -DCMAKE_INSTALL_PREFIX=/usr ..;
+    cmake --build . --target install
+    chdir=/tmp/rabbitmq-c
+    creates=/usr/lib/{{ ansible_architecture }}-linux-gnu/librabbitmq.so

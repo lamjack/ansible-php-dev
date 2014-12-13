@@ -1,0 +1,172 @@
+---
+
+# If true, installs Nginx.
+install_nginx: true
+
+# The global COMPOSER_HOME path.
+#
+# See: https://getcomposer.org/doc/03-cli.md#composer-home
+composer_path: /opt/composer
+
+# The base path to store the log files.
+log_path: /var/log
+
+# PHP log directory path.
+php_log_path: "{{ log_path }}/php"
+
+# PHP-FPM log directory path.
+php_fpm_log_path: "{{ log_path }}/php-fpm"
+
+# One of the possible values: "all" or "latest".
+#
+# If "all", the php role will build all the PHP releases listed in the php_releases variable. If "latest", it will
+# build only the latest PHP release listed in the php_releases variable.
+php_build_releases: latest
+
+# One of the possible values: "all" or "latest".
+#
+# If "all", every PHP relase in php_releases will be build against the all the built ICU releases listed in the
+# icu_releases variable (see the icu role).
+#
+# If "latest", every PHP relase in php_releases will be build against the latest built ICU release listed in the
+# icu_releases variable.
+php_icu_build_releases: latest
+
+# A list of PHP releases (dictionaries) to be compiled and installed. Attributes:
+#
+# - version: required - the full version specification (e.g. 5.3.3)
+# - minor: required - used to make the versions comparisons
+# - ini_file: optional - which php.ini file to use, "development" or "production", defaults to "development"
+#
+# This list must be ordered from oldest to newest version by convention. See php_build_releases.
+#
+# If php_icu_build_releases is equal to "latest", it will create a symlink from the minor to the version value in the
+# phpenv_versions_path directory, just to simplify the usage of phpenv local and global commands:
+#
+#     $ phpenv versions
+#       5.6
+#     * 5.6.3 (set by /opt/phpenv/version)
+#
+#     $ phpenv local 5.6
+#
+#     $ phpenv versions
+#     * 5.6 (set by /home/vagrant/.php-version)
+#       5.6.3
+php_releases:
+  - {
+    version: "5.3.29",
+    minor: "5.3"
+  }
+  - {
+    version: "5.4.35",
+    minor: "5.4"
+  }
+  - {
+    version: "5.5.19",
+    minor: "5.5"
+  }
+  - {
+    version: "5.6.3",
+    minor: "5.6"
+  }
+
+# A dictionary of PHP configuration directives. These overrides the default values in the php.ini file and are stored
+# in the phpenv_versions_path/<php-version>/etc/conf.d/php-configuration.ini file.
+#
+# php.ini sections are not supported.
+#
+# See: http://php.net/manual/en/ini.list.php
+# See: http://php.net/manual/en/ini.core.php
+php_ini_configuration:
+  error_log: "{{ php_log_path }}/error.log"
+  html_errors: On
+  cgi.fix_pathinfo: 0
+  date.timezone: UTC
+
+# A dictionary of PHP-FPM configuration directives. These overrides the default values in the php.ini file and are
+# stored in the phpenv_versions_path/<php-version>/etc/fpm.conf.d/php-fpm-configuration.ini file.
+#
+# See: http://php.net/manual/en/install.fpm.configuration.php
+php_fpm_configuration:
+  error_log: "{{ php_fpm_log_path }}/error.log"
+
+# A list with the name of the PHP-FPM pools.
+#
+# The www pool must exists as we are using the default php-fpm.conf file.
+php_fpm_pools:
+  - www
+
+# A dictionary of dictionaries with the specific configuration for each pool in php_fpm_pools.
+php_fpm_pools_configuration:
+  www:
+    group: www-data
+    user: www-data
+    listen: 0.0.0.0:9000
+
+# A list of PECL extensions (dictionaries) desired to be installed. Attributes:
+#
+# - name: required - the name of the extension as listed in pecl.php.net
+# - version: optional - the specific version to install, defaults to "stable"
+# - alias: optional - some extensions use another name to build the shared object file. ZendOpcache, for example,
+#     build a opcache.so file. Use this attribute for these cases
+# - zend_extension: optional - set to true if the extension is a Zend extension, otherwise the extension will not load
+#     properly. Defaults to false
+# - php_version: optional - only install if the PHP version comparison pass for this value. Defaults to the latest
+#     release listed in php_releases
+# - php_comparison: optional - a comparison operator used to compare against php_version. Defaults to "<=".
+#     available comparison operators in: http://docs.ansible.com/playbooks_variables.html#version-comparison-filters
+php_pecl_extensions:
+  - {
+    name: "amqp",
+    version: "1.4.0",
+    package: "cmake"
+  }
+  - {
+    name: "igbinary",
+    version: "1.2.1"
+  }
+  - {
+    name: "memcached",
+    version: "2.2.0",
+    package: "libmemcached-dev"
+  }
+  - {
+    name: "mongo",
+    version: "1.5.8"
+  }
+  - {
+    name: "riak",
+    version: "1.2.0"
+  }
+  - {
+    name: "xdebug",
+    version: "2.2.6",
+    zend_extension: true
+  }
+  - {
+    name: "zendopcache",
+    version: "7.0.3",
+    alias: "opcache",
+    zend_extension: true,
+    php_version: "5.4",
+    php_comparison: "<="
+  }
+
+# If true, build librabbitmq. If you're installing a packaged version of it or isn't installing the PECL amqp package,
+# set it to false.
+php_pecl_build_librabbitmq: true
+
+# A list of packages to be installed globally with Composer.
+composer_packages:
+  - behat/behat:~3.0
+  - fabpot/php-cs-fixer:~1.2
+  - pdepend/pdepend:~2.0
+  - phploc/phploc:~2.0
+  - phpmd/phpmd:~2.1
+  - phpunit/phpunit:~4.3
+  - sebastian/phpcpd:~2.0
+  - squizlabs/php_codesniffer:~1.5
+  - theseer/phpdox:~0.7
+
+# If true, clean up the Composer cache after installing the packages.
+composer_clean_cache: false

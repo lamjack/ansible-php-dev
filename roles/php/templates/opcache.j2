@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+function usage {
+  echo "Enable/disable the Zend OPCache for the current PHP version."
+  echo "";
+  echo "Usage: opcache {enable|disable}";
+  echo "";
+  echo "";
+  echo "NOTE: the PHP version to enable or disable the Zend OPCache depends from which";
+  echo "      directory this command is called. If the current directory have a version";
+  echo "      set by 'phpenv local', it will use the PHP-FPM version for that version,";
+  echo "      otherwise it will use the global version.";
+}
+
+function get_php_version {
+  echo `{{ phpenv_path }}/bin/phpenv which php | sed -r 's@{{ phpenv_versions_path }}/(.*)/bin/php@\1@g'`;
+}
+
+function turnOn {
+  php_version=$(get_php_version);
+
+  if [ $state = 0 ]; then
+    mv $opcache_off_path $opcache_on_path;
+    echo "The Zend OPCache (PHP version $php_version) was enabled.";
+  else
+    echo "The Zend OPCache (PHP version $php_version) is already enabled.";
+  fi
+
+  info;
+}
+
+function turnOff {
+  php_version=$(get_php_version);
+
+  if [ $state = 1 ]; then
+    mv $opcache_on_path $opcache_off_path;
+    echo "The Zend OPCache (PHP version $php_version) was disabled.";
+  else
+    echo "The Zend OPCache (PHP version $php_version) is already disabled.";
+  fi
+
+  info;
+}
+
+function info {
+{% if install_nginx %}
+  if [ -f /run/nginx.pid ]; then
+    echo "";
+    echo "You need to restart the webserver for the changes to take effect.";
+    echo "Execute: webserver restart";
+  fi
+{% endif %}
+}
+
+if [[ `whoami` != "root" ]]; then
+  echo "Run this command as a root user.";
+  exit 1;
+fi
+
+opcache_ini_path="`{{ phpenv_path }}/shims/php-config --prefix`/etc/conf.d";
+opcache_on_path="$opcache_ini_path/opcache.ini";
+opcache_off_path="$opcache_ini_path/opcache.ini.off";
+
+state=;
+
+if [ -f "$opcache_on_path" ]; then
+  state=1;
+elif [ -f "$opcache_off_path" ]; then
+  state=0;
+else
+  echo "No Zend OPCache ini file was found in $opcache_ini_path";
+  echo "The possible reason is that you uninstalled the extension or deleted the ini file.";
+  exit 1;
+fi
+
+case $1 in
+  enable)
+    turnOn;
+
+    ;;
+  disable)
+    turnOff;
+
+    ;;
+  *)
+    usage;
+    exit 3;
+
+    ;;
+esac
+
+exit 0;

@@ -1,0 +1,6 @@
+[global]
+{% if php_fpm_configuration|default(false) %}
+{% for name, value in php_fpm_configuration.iteritems() %}
+{{ name }}={{ value }}
+{% endfor %}
+{% endif %}

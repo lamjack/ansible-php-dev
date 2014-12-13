@@ -1,0 +1,38 @@
+---
+
+- name: Install PECL extensions dependencies.
+  apt: pkg={{ item.package }} state=present
+  when: item.package|default(false)
+  with_items: php_pecl_extensions
+
+# PECL ext/amqp dependency.
+- include: pecl/librabbitmq.yml
+  when: php_pecl_build_librabbitmq
+
+# Always reply the default answer to any question prompt.
+- name: Install PECL extensions.
+  shell: >
+    yes '' | bin/pecl install {{ item.2.name }}-{{ item.2.version|default('stable') }}
+    chdir={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}
+    creates={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/conf.d/{{ item.2.alias if item.2.alias|default(false) else item.2.name }}.ini
+  when:
+    item.0.minor|version_compare(
+      item.2.php_version|default(php_releases[-1].version), item.2.php_comparison|default('<=')
+    )
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+    - php_pecl_extensions
+
+- name: Configure PECL extensions.
+  template: >
+    src=extension.ini.j2
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/conf.d/{{ item.2.alias if item.2.alias|default(false) else item.2.name }}.ini
+  when:
+    item.0.minor|version_compare(
+      item.2.php_version|default(php_releases[-1].version), item.2.php_comparison|default('<=')
+    )
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+    - php_pecl_extensions

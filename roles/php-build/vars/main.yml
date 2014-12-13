@@ -1,0 +1,5 @@
+---
+
+phpbuild_profile_scripts:
+  - php-build.sh
+  - phpenv.sh

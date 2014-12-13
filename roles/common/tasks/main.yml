@@ -1,0 +1,20 @@
+---
+
+- name: Install build-essential.
+  apt: >
+    pkg=build-essential
+    update_cache=yes
+    state=present
+
+- name: Copy script for bash.bashrc setup.
+  copy: src=profile dest=/tmp/profile
+
+- name: Configure bash.bashrc with guard clause to export profile.d
+  shell: 'cat /etc/bash.bashrc | grep "Start profile export." && echo "Done." || cat /tmp/profile >> /etc/bash.bashrc'
+
+- name: Create guard clause variable.
+  lineinfile: >
+    line="export _EXPORTED=1"
+    dest=/etc/profile.d/_exported.sh
+    create=yes
+    state=present

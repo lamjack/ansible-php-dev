@@ -1,0 +1,77 @@
+---
+
+# One of the possible values: "all" or "latest".
+#
+# If "all", the icu role will build all the ICU releases listed in the icu_releases variable. If "latest", it will
+# build only the latest ICU release listed in the icu_releases variable.
+icu_build_releases: latest
+
+# The path to install the ICU releases.
+icu_path: /opt/icu/versions
+
+# ICU uses Source Forge to distribute its downloads.
+icu_mirror_base_url: http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/i/ic/icu/ICU4C
+
+# A list of ICU releases (dictionaries) to be compiled and installed. Attributes:
+#
+# - version: required - the minor version specification (e.g. 4.0)
+# - url: required - the URL to the release gzip file in the icu-project.org website
+# - md5_checksum: required - the MD5 checksum of the gzip file (available on the icu-project.org website)
+# - patch_url: optional - a URL to a patch file to apply to the ICU source code
+icu_releases:
+  - {
+    version: "4.0",
+    url: "{{ icu_mirror_base_url }}/4.0.1/icu4c-4_0_1-src.tgz",
+    patch_url: "https://gist.githubusercontent.com/eriksencosta/893710/raw/ce5f865d4be7b36419b39e82d64d718bcde9f878/icu-4.0-gcc-4.4.patch",
+    md5_checksum: "2f6ecca935948f7db92d925d88d0d078"
+  }
+  - {
+    version: "4.2",
+    url: "{{ icu_mirror_base_url }}/4.2.1/icu4c-4_2_1-src.tgz",
+    md5_checksum: "e3738abd0d3ce1870dc1fd1f22bba5b1"
+  }
+  - {
+    version: "4.4",
+    url: "{{ icu_mirror_base_url }}/4.4.2/icu4c-4_4_2-src.tgz",
+    md5_checksum: "314e582264c36b3735466c522899aa07"
+  }
+  - {
+    version: "4.6",
+    url: "{{ icu_mirror_base_url }}/4.6.1/icu4c-4_6_1-src.tgz",
+    md5_checksum: "da64675d85f0c2191cef93a8cb5eea88"
+  }
+  - {
+    version: "4.8",
+    url: "{{ icu_mirror_base_url }}/4.8.1.1/icu4c-4_8_1_1-src.tgz",
+    md5_checksum: "ea93970a0275be6b42f56953cd332c17"
+  }
+  - {
+    version: "49",
+    url: "{{ icu_mirror_base_url }}/49.1.2/icu4c-49_1_2-src.tgz",
+    md5_checksum: "bbc609fe5237202d7abf016141012a45"
+  }
+  - {
+    version: "50",
+    url: "{{ icu_mirror_base_url }}/50.1.2/icu4c-50_1_2-src.tgz",
+    md5_checksum: "beb98aa972219c9fcd9c8a71314943c9"
+  }
+  - {
+    version: "51",
+    url: "{{ icu_mirror_base_url }}/51.2/icu4c-51_2-src.tgz",
+    md5_checksum: "072e501b87065f3a0ca888f1b5165709"
+  }
+  - {
+    version: "52",
+    url: "{{ icu_mirror_base_url }}/52.1/icu4c-52_1-src.tgz",
+    md5_checksum: "9e96ed4c1d99c0d14ac03c140f9f346c"
+  }
+  - {
+    version: "53",
+    url: "{{ icu_mirror_base_url }}/53.1/icu4c-53_1-src.tgz",
+    md5_checksum: "b73baa6fbdfef197608d1f69300919b9"
+  }
+  - {
+    version: "54",
+    url: "{{ icu_mirror_base_url }}/54.1/icu4c-54_1-src.tgz",
+    md5_checksum: "e844caed8f2ca24c088505b0d6271bc0"
+  }

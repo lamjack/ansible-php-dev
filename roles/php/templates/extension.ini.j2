@@ -1,0 +1,19 @@
+; Enable extension.
+{% if item.2.zend_extension|default(false) %}
+{%
+for data in php_extension_dir.results if
+  data.item.0.version == item.0.version and
+  data.item.1.version|default(true) == item.1.version|default(true)
+%}
+zend_extension={{ data.stdout }}/{{ item.2.alias if item.2.alias|default(false) else item.2.name }}.so
+{% endfor %}
+{% else %}
+extension={{ item.2.alias if item.2.alias|default(false) else item.2.name }}.so
+{% endif %}
+
+{% if item.2.configuration|default(false) %}
+; Configuration.
+{% for name, value in item.2.configuration.iteritems() %}
+{{ name }}={{ value }}
+{% endfor %}
+{% endif %}

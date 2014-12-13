@@ -1,0 +1,71 @@
+---
+
+- name: Define which versions of ICU to build.
+  set_fact:
+    icu_filtered_releases: "{{ icu_releases[0:] if icu_build_releases == 'all' else icu_releases[-1:] }}"
+  when: icu_build_releases|default("latest")
+
+- name: Check if ICU is already compiled.
+  shell: "[ `ls -1 {{ icu_path }} | wc -l` = '{{ icu_filtered_releases|count }}' ]"
+  register: is_installed
+  ignore_errors: true
+
+- name: Create directories.
+  file: dest=/tmp/icu state=directory
+  when: not is_installed|success
+
+- name: Download ICU release.
+  get_url: >
+    url={{ item.url }}
+    dest=/tmp/icu/{{ item.version }}.tgz
+  when: not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Download patch.
+  get_url: >
+    url={{ item.patch_url }}
+    dest=/tmp/icu/{{ item.version }}.patch
+  when: item.patch_url|default(false) and not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Check the MD5 sum.
+  shell: >
+    test `md5sum /tmp/icu/{{ item.version }}.tgz | sed -r "s/(.{32})(.*)/\1/"` = {{ item.md5_checksum }}
+  when: not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Uncompress and unpack release.
+  shell: >
+    tar xzvf /tmp/icu/{{ item.version }}.tgz;
+    mv icu {{ item.version }}
+    chdir=/tmp/icu
+    creates=/tmp/icu/{{ item.version }}
+  when: not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Apply patch.
+  shell: >
+    patch --verbose -p0 < /tmp/icu/{{ item.version }}.patch; touch patched
+    chdir=/tmp/icu/{{ item.version }}
+    creates=/tmp/icu/{{ item.version }}/patched
+  when: item.patch_url|default(false) and not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Compile and install ICU.
+  shell: >
+    ./configure --prefix={{ icu_path }}/{{ item.version }};
+    make;
+    make install;
+    chdir=/tmp/icu/{{ item.version }}/source
+    creates={{ icu_path }}/{{ item.version }}
+  when: not is_installed|success
+  with_items: icu_filtered_releases
+
+- name: Configure profile for ICU.
+  lineinfile: >
+    line='[[ "$LD_LIBRARY_PATH" != "" ]] && LD_LIBRARY_PATH="$LD_LIBRARY_PATH:"; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH{{ icu_path }}/{{ item.version }}/lib'
+    dest=/etc/profile.d/icu.sh
+    insertafter=EOF
+    create=yes
+    state=present
+  with_items: icu_filtered_releases

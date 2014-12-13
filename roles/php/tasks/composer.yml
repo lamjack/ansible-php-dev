@@ -1,0 +1,35 @@
+---
+
+- name: Create Composer directory.
+  file: >
+    dest={{ composer_path }}
+    state=directory
+    owner=root
+    group=root
+    mode=0755
+
+- name: Copy Composer wrapper script.
+  template: >
+    src=composer.j2
+    dest=/usr/local/bin/composer
+    owner=root
+    group=root
+    mode=0755
+
+# Maybe: remove creates to get the latest always.
+- name: Install Composer.
+  shell: >
+    curl -sS https://getcomposer.org/installer | {{ phpenv_path }}/shims/php;
+    mv composer.phar {{ composer_path }}/composer
+    creates={{ composer_path }}/composer
+
+- name: Configure profile for Composer.
+  template: src=composer.sh.j2 dest=/etc/profile.d/composer.sh
+
+- name: Install packages globally with Composer.
+  command: "composer global require '{{ item }}'"
+  with_items: composer_packages
+
+- name: Clean up Composer cache.
+  command: composer clear-cache
+  when: composer_clean_cache

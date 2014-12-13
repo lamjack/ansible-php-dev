@@ -1,0 +1,20 @@
+# Need PEAR to install PECL.
+with_pear
+
+# Enable PDO PostgreSQL.
+configure_option -R "--with-pdo-pgsql"
+
+# Enable ext/intl with latest ICU version.
+configure_option "--enable-intl"
+configure_option "--with-icu-dir" "{{ icu_path }}/{{ item.1.version }}"
+
+# Disable CGI.
+configure_option -R "--disable-cgi"
+
+{% if item.0.version|version_compare('5.4', '<') %}
+# Remove libevent dir for PHP < 5.4.
+# Alternative way: install newer libevent version (> 1.4.11)
+configure_option -R --without-libevent-dir
+{% endif %}
+
+source {{ phpbuild_path }}/share/php-build/definitions/{{ item.0.version }}

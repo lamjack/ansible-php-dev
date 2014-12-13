@@ -1,0 +1,27 @@
+# Integrate with PHP-FPM using FastCGI.
+#
+# See:
+#
+# - https://github.com/gplessis/dotdeb-nginx/blob/wheezy/debian/conf/sites-available/default
+# - http://symfony.com/doc/current/cookbook/configuration/web_server_configuration.html#nginx
+server {
+    listen 80 default_server;
+
+    autoindex on;
+    index index.php index.html index.html;
+    root {{ nginx_docroot_path }};
+
+    location / {
+        # First attempt to serve request as file, then
+        # as directory, then fall back to displaying a 404.
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTPS off;
+   }
+}

@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+
+function usage {
+  echo "Starts Nginx and PHP-FPM servers (from phpenv)."
+  echo "";
+  echo "Usage: webserver [options] {start|stop|restart}";
+  echo "";
+  echo "Options (available only for start and restart):";
+  echo "";
+  echo "[--php-version]   The version of PHP to start the PHP-FPM server. If 'current',";
+  echo "                  it will use the global or local version as set by phpenv";
+  echo "                  (see the NOTE below). A valid version is one of the listed by";
+  echo "                  'phpenv versions'.";
+  echo "[--foreground]    Run Nginx in foreground.";
+  echo "[--redirect-logs] Redirect Nginx logs, PHP-FPM and PHP error logs to the"
+  echo "                  standard output streams. Must be used with --foreground";
+  echo "";
+  echo "";
+  echo "If you only need to start the PHP-FPM server, look for the fpm command.";
+  echo "";
+  echo "NOTE: the PHP-FPM version to start or stop depends from which directory this";
+  echo "      command is called. If the current directory have a version set by";
+  echo "      'phpenv local', it will use the PHP-FPM version for that version,";
+  echo "      otherwise it will use the global version.";
+}
+
+function get_php_version {
+  if [ $php_version = "current" ]; then
+    echo `{{ phpenv_path }}/bin/phpenv which php | sed -r 's@{{ phpenv_versions_path }}/(.*)/bin/php@\1@g'`;
+  else
+    echo $php_version;
+  fi
+}
+
+function get_php_bin_path {
+  if [ $php_version = "current" ]; then
+    echo "{{ phpenv_path }}/shims/php-fpm";
+  elif [ -f "{{ phpenv_versions_path }}/$php_version/bin/php-fpm" ]; then
+    echo "{{ phpenv_versions_path }}/$php_version/bin/php-fpm";
+  fi
+}
+
+function start {
+  php_fpm_binary=$(get_php_bin_path);
+  if [ "$php_fpm_binary" = "" ]; then
+    echo "No PHP-FPM binary found for the version $php_version.";
+    exit 126;
+  fi
+
+  php_version=$(get_php_version);
+
+  echo "Starting PHP-FPM (PHP version $php_version) server.";
+
+  if [ $foreground = 1 ]; then
+    # See: https://docs.docker.com/reference/run/#foreground
+    if [ $redirect = 1 ]; then
+      # Nginx.
+      ln -sf /dev/stdout /var/log/nginx/access.log;
+      ln -sf /dev/stderr /var/log/nginx/error.log;
+      # PHP-FPM and PHP.
+      ln -sf /dev/stderr {{ php_fpm_configuration['error_log'] }};
+      ln -sf /dev/stderr {{ php_ini_configuration['error_log'] }};
+    fi
+  fi
+
+  `$php_fpm_binary`;
+
+  echo "Starting Nginx server.";
+  if [ $foreground = 1 ]; then
+    nginx -g "daemon off;";
+  else
+    nginx;
+  fi
+}
+
+function stop {
+  echo "Stopping Nginx server.";
+  if [ -f /run/nginx.pid ]; then
+    nginx -s stop;
+
+    if [ -L /var/log/nginx/access.log ]; then
+      rm /var/log/nginx/access.log;
+    fi
+
+    if [ -L /var/log/nginx/error.log ]; then
+      rm /var/log/nginx/error.log;
+    fi
+  fi
+
+  echo "Stopping running PHP-FPM server.";
+  pkill -15 php-fpm;
+  sleep 5;
+  pkill -9 php-fpm;
+
+  if [ -L {{ php_fpm_configuration['error_log'] }} ]; then
+    rm {{ php_fpm_configuration['error_log'] }};
+  fi
+
+  if [ -L {{ php_ini_configuration['error_log'] }} ]; then
+    rm {{ php_ini_configuration['error_log'] }};
+  fi
+}
+
+if [[ `whoami` != "root" ]]; then
+  echo "Run this command as a root user.";
+  exit 1;
+fi
+
+# Default options values.
+php_version="current";
+foreground=0;
+redirect=0;
+
+while [[ $# > 1 ]]
+do
+  key="$1";
+  shift;
+
+  case $key in
+    --php-version)
+      php_version=$1;
+      shift;
+
+      ;;
+    --foreground)
+      foreground=1;
+
+      ;;
+    --redirect-logs)
+      redirect=1;
+
+      ;;
+  esac
+done
+
+case $1 in
+  start)
+    start;
+    echo "Done.";
+
+    ;;
+  stop)
+    stop;
+    echo "Done.";
+
+    ;;
+  restart)
+    stop;
+    start;
+    echo "Done.";
+
+    ;;
+  *)
+    usage;
+    exit 3;
+
+    ;;
+esac
+
+exit 0;

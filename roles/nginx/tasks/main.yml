@@ -1,0 +1,39 @@
+---
+
+- name: Install DotDeb repository key.
+  apt_key: >
+    url=http://www.dotdeb.org/dotdeb.gpg
+    state=present
+
+- name: Enable DotDeb repository.
+  apt_repository: >
+    repo="deb http://packages.dotdeb.org wheezy all"
+    update_cache=yes
+    state=present
+
+- name: Install Nginx.
+  apt: pkg=nginx state=present
+
+- name: Disable Nginx as a service.
+  service: name=nginx enabled=no state=stopped
+
+- name: Create configuration file for the upstream PHP-FPM server.
+  copy: src=php-fpm.conf dest=/etc/nginx/conf.d/php-fpm.conf
+
+- name: Configure default Nginx virtual host.
+  template: src=default.j2 dest=/etc/nginx/sites-available/default
+
+- name: Create the webserver document root.
+  file: >
+    dest={{ nginx_docroot_path }}
+    state=directory
+    owner=root
+    group=www-data
+    mode=0775
+
+- name: Create an info.php file in the document root.
+  lineinfile: >
+    line="<?php phpinfo();"
+    dest={{ nginx_docroot_path }}/info.php
+    create=yes
+    state=present

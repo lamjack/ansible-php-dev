@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+function usage {
+  echo "Starts the PHP-FPM server (from phpenv)."
+  echo "";
+  echo "Usage: php-fpm [options] {start|stop|restart}";
+  echo "";
+  echo "Options (available only for start and restart):";
+  echo "";
+  echo "[--php-version]    The version of PHP to start the PHP-FPM server. If 'current',";
+  echo "                   it will use the global or local version as set by phpenv";
+  echo "                   (see the NOTE below). A valid version is one of the listed by";
+  echo "                   'phpenv versions'.";
+  echo "[--foreground]     Run PHP-FPM in foreground.";
+  echo "[--redirect-error] Redirect PHP-FPM and PHP error logs to stderr. Must be used"
+  echo "                   with --foreground";
+  echo "";
+  echo "";
+  echo "NOTE: the PHP-FPM version to start or stop depends from which directory this";
+  echo "      command is called. If the current directory have a version set by";
+  echo "      'phpenv local', it will use the PHP-FPM version for that version,";
+  echo "      otherwise it will use the global version.";
+}
+
+function get_php_version {
+  if [ $php_version = "current" ]; then
+    echo `{{ phpenv_path }}/bin/phpenv which php | sed -r 's@{{ phpenv_versions_path }}/(.*)/bin/php@\1@g'`;
+  else
+    echo $php_version;
+  fi
+}
+
+function get_php_bin_path {
+  if [ $php_version = "current" ]; then
+    echo "{{ phpenv_path }}/shims/php-fpm";
+  elif [ -f "{{ phpenv_versions_path }}/$php_version/bin/php-fpm" ]; then
+    echo "{{ phpenv_versions_path }}/$php_version/bin/php-fpm";
+  fi
+}
+
+function start {
+  php_fpm_binary=$(get_php_bin_path);
+  if [ "$php_fpm_binary" = "" ]; then
+    echo "No PHP-FPM binary found for the version $php_version.";
+    exit 126;
+  fi
+
+  php_version=$(get_php_version);
+
+  echo "Starting PHP-FPM (PHP version $php_version) server.";
+
+  php_fpm_options="";
+  if [ $foreground = 1 ]; then
+    # See: https://docs.docker.com/reference/run/#foreground
+    php_fpm_options="-F"
+
+    if [ $redirect = 1 ]; then
+      # The --force-stderr option is available since PHP 5.6.
+      if [ $php_version = `printf "5.6\n$php_version" | sort -V | tail -1` ]; then
+        php_fpm_options="$php_fpm_options --force-stderr"
+      else
+        ln -sf /dev/stderr {{ php_fpm_configuration['error_log'] }};
+      fi
+
+      ln -sf /dev/stderr {{ php_ini_configuration['error_log'] }};
+    fi
+  fi
+
+  `$php_fpm_binary $php_fpm_options`;
+}
+
+function stop {
+  echo "Stopping running PHP-FPM server.";
+  pkill -15 php-fpm;
+  sleep 5;
+  pkill -9 php-fpm;
+
+  if [ -L {{ php_fpm_configuration['error_log'] }} ]; then
+    rm {{ php_fpm_configuration['error_log'] }};
+  fi
+
+  if [ -L {{ php_ini_configuration['error_log'] }} ]; then
+    rm {{ php_ini_configuration['error_log'] }};
+  fi
+}
+
+if [[ `whoami` != "root" ]]; then
+  echo "Run this command as a root user.";
+  exit 1;
+fi
+
+# Default options values.
+php_version="current";
+foreground=0;
+redirect=0;
+
+while [[ $# > 1 ]]
+do
+  key="$1";
+  shift;
+
+  case $key in
+    --php-version)
+      php_version=$1;
+      shift;
+
+      ;;
+    --foreground)
+      foreground=1;
+
+      ;;
+    --redirect-error)
+      redirect=1;
+
+      ;;
+  esac
+done
+
+case $1 in
+  start)
+    start;
+    echo "Done.";
+
+    ;;
+  stop)
+    stop;
+    echo "Done.";
+
+    ;;
+  restart)
+    stop;
+    start;
+    echo "Done.";
+
+    ;;
+  *)
+    usage;
+    exit 3;
+
+    ;;
+esac
+
+exit 0;

@@ -1,0 +1,4 @@
+# The path to the Nginx document root.
+#
+# I dislike /usr/share/nginx/html - prefer the old school /var/www Debian Apache way of life!
+nginx_docroot_path: /var/www

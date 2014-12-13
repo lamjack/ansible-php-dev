@@ -1,0 +1,7 @@
+---
+
+dependencies:
+  - common
+  - icu
+  - php-build
+  - { role: nginx, when: install_nginx }

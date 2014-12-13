@@ -1,0 +1,6 @@
+[{{ item.2 }}]
+{% if php_fpm_pools_configuration[item.2]|default(false) %}
+{% for name, value in php_fpm_pools_configuration[item.2].iteritems() %}
+{{ name }}={{ value }}
+{% endfor %}
+{% endif %}

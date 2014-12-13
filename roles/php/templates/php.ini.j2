@@ -1,0 +1,5 @@
+{% if php_ini_configuration|default(false) %}
+{% for name, value in php_ini_configuration.iteritems() %}
+{{ name }}={{ value }}
+{% endfor %}
+{% endif %}

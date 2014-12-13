@@ -1,0 +1,80 @@
+---
+
+- name: Create the logs directory.
+  file: >
+    dest={{ item }}
+    owner=www-data
+    group=adm
+    state=directory
+    mode=0750
+  with_items:
+    - "{{ php_log_path }}"
+    - "{{ php_fpm_log_path }}"
+
+- name: Configure PHP.
+  template: >
+    src=php.ini.j2
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/conf.d/php-configuration.ini
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Move Zend OPCache extension loading from the php.ini file to conf.d/opcache.ini (PHP >= 5.5).
+  shell: >
+    extension=`grep '^zend_extension=.*\/opcache\.so' php.ini`;
+    test $? = 0 &&
+      echo $extension > conf.d/opcache.ini &&
+      sed -ie '/^zend_extension=.*\/opcache\.so$/d' php.ini ||
+      echo "The extension loading was removed from the php.ini file."
+  args:
+    chdir: "{{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc"
+  when: item.0.version|version_compare('5.5', '>=')
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Enable PHP-FPM configuration file.
+  command: >
+    mv php-fpm.conf.default php-fpm.conf
+    chdir={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc
+    creates={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/php-fpm.conf
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Create the fpm.conf.d directory.
+  file: >
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/fpm.conf.d
+    owner=root
+    group=root
+    state=directory
+    mode=0755
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Change PHP-FPM to parse the fpm.conf.d directory.
+  lineinfile: >
+    line="include = etc/fpm.conf.d/*.ini"
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/php-fpm.conf
+    state=present
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Configure PHP-FPM.
+  template: >
+    src=php-fpm.ini.j2
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/fpm.conf.d/php-fpm-configuration.ini
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Configure PHP-FPM pool.
+  template: >
+    src=php-fpm-pool.ini.j2
+    dest={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/fpm.conf.d/php-fpm-{{ item.2 }}-pool.ini
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+    - php_fpm_pools

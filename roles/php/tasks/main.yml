@@ -1,0 +1,117 @@
+---
+
+- name: Define which versions of PHP to build.
+  set_fact:
+    php_filtered_releases: "{{ php_releases[0:] if php_build_releases == 'all' else php_releases[-1:] }}"
+  when: php_build_releases|default('latest')
+
+- name: Define which ICU to compile ext/intl.
+  set_fact:
+    php_icu_releases: "{{ icu_filtered_releases if php_icu_build_releases == 'all' else icu_filtered_releases[-1:] }}"
+  when: php_icu_build_releases|default('latest')
+
+- name: Install PHP dependencies.
+  apt: >
+    pkg={{ item }}
+    update_cache=yes
+    state=present
+  with_items:
+    - re2c
+    - flex
+    - bison
+    - lemon
+    - libxml2-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libmcrypt-dev
+    - libtidy-dev
+    - libxslt-dev
+    - openssl
+    - libssl-dev
+    - libcurl4-openssl-dev
+    - libreadline6-dev
+    # For PECL.
+    - autoconf
+    # For pdo-pgsql.
+    - libpq-dev
+
+- name: Install procps (used by the webserver script).
+  apt: pkg=procps state=present
+  when: install_nginx
+
+- name: Symlink OpenSSL library.
+  shell: ln -s /usr/lib/{{ ansible_architecture }}-linux-gnu/libssl.so /usr/local/lib creates=/usr/local/lib/libssl.so
+
+- name: Create directory for the definitions files.
+  file: dest=/tmp/definitions state=directory
+
+- name: Create a custom definition file for the PHP version (with PEAR and PECL).
+  template: src=definition.j2 dest=/tmp/definitions/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Build PHP versions.
+  shell: >
+    {{ phpbuild_path }}/bin/php-build -i {{ item.ini_file|default('development') }} {{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }} {{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }};
+    chdir=/tmp/definitions
+    creates={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/php.ini
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Symlink versions.
+  file: >
+    src={{ phpenv_versions_path }}/{{ item.version }}
+    dest={{ phpenv_versions_path }}/{{ item.minor }}
+    state=link
+  when: item.minor|default(false) and php_icu_releases|count == 1
+  with_items: php_filtered_releases
+
+- name: Move PHP-FPM to the bin directory to be available in the shims.
+  command: >
+    mv sbin/php-fpm bin/php-fpm
+    chdir={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}
+    creates={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/bin/php-fpm
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Retrieve the PHP extension directory.
+  command: "{{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/bin/php-config --extension-dir"
+  register: php_extension_dir
+  with_nested:
+    - php_filtered_releases
+    - php_icu_releases
+
+- name: Get the latest PHP built version.
+  shell: ls {{ phpenv_versions_path }} | tail -1
+  register: php_latest_version
+
+- name: Set the latest PHP version as the global version.
+  shell: "{{ phpenv_path }}/bin/phpenv rehash; {{ phpenv_path }}/bin/phpenv global {{ php_latest_version.stdout }}"
+
+- name: Copy helper scripts to /usr/local/bin.
+  template: >
+    src={{ item.name }}.j2
+    dest=/usr/local/bin/{{ item.name }}
+    owner=root
+    group=root
+    mode=0755
+  when: item.install|default(true)
+  with_items:
+    - {
+      name: fpm,
+      install: "{{ install_nginx }}"
+    }
+    - {
+      name: opcache
+    }
+    - {
+      name: webserver,
+      install: "{{ install_nginx }}"
+    }
+
+- include: configuration.yml
+- include: pecl.yml
+- include: composer.yml
