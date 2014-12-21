@@ -58,15 +58,15 @@ php_releases:
     minor: "5.3"
   }
   - {
-    version: "5.4.35",
+    version: "5.4.36",
     minor: "5.4"
   }
   - {
-    version: "5.5.19",
+    version: "5.5.20",
     minor: "5.5"
   }
   - {
-    version: "5.6.3",
+    version: "5.6.4",
     minor: "5.6"
   }
 
