@@ -17,4 +17,16 @@ configure_option -R "--disable-cgi"
 configure_option -R --without-libevent-dir
 {% endif %}
 
-source {{ phpbuild_path }}/share/php-build/definitions/{{ item.0.version }}
+# Just in case php-build does not have the definition file.
+# Works only with the most "recent releases".
+if [ -f {{ phpbuild_path }}/share/php-build/definitions/{{ item.0.version }} ]; then
+  source {{ phpbuild_path }}/share/php-build/definitions/{{ item.0.version }}
+else
+  # Xdebug is installed with pecl.
+  install_package "https://php.net/distributions/php-{{ item.0.version }}.tar.bz2"
+  install_pyrus
+
+  {% if item.0.version|version_compare('5.5', '>=') %}
+  enable_builtin_opcache
+  {% endif %}
+fi
