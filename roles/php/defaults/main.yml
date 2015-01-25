@@ -159,7 +159,7 @@ php_pecl_build_librabbitmq: true
 # A list of packages to be installed globally with Composer.
 composer_packages:
   - behat/behat:~3.0
-  - fabpot/php-cs-fixer:~1.2
+  - fabpot/php-cs-fixer:~1.4
   - pdepend/pdepend:~2.0
   - phploc/phploc:~2.0
   - phpmd/phpmd:~2.1
