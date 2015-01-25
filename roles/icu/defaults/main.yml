@@ -10,7 +10,7 @@ icu_build_releases: latest
 icu_path: /opt/icu/versions
 
 # ICU uses Source Forge to distribute its downloads.
-icu_mirror_base_url: http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/i/ic/icu/ICU4C
+icu_mirror_base_url: http://iweb.dl.sourceforge.net/project/icu/ICU4C
 
 # A list of ICU releases (dictionaries) to be compiled and installed. Attributes:
 #
