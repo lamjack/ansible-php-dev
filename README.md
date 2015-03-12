@@ -18,7 +18,7 @@ See the Usage section for information about daily usage.
 
 ## Requirements
 
-- Ansible 1.2 or greater
+- Ansible 1.8 or greater
 - Debian Wheezy
 
 
