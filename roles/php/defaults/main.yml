@@ -154,7 +154,7 @@ php_pecl_extensions:
   }
   - {
     name: "zendopcache",
-    version: "7.0.3",
+    version: "7.0.4",
     alias: "opcache",
     zend_extension: true,
     php_version: "5.4",
