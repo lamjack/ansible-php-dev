@@ -140,8 +140,17 @@ php_pecl_extensions:
   }
   - {
     name: "xdebug",
-    version: "2.2.6",
-    zend_extension: true
+    version: "2.3.1",
+    zend_extension: true,
+    php_version: "5.3",
+    php_comparison: ">"
+  }
+  - {
+    name: "xdebug",
+    version: "2.2.7",
+    zend_extension: true,
+    php_version: "5.4",
+    php_comparison: "<"
   }
   - {
     name: "zendopcache",
