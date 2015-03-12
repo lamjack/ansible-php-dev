@@ -135,6 +135,10 @@ php_pecl_extensions:
     version: "1.6.4"
   }
   - {
+    name: "redis",
+    version: "2.2.7"
+  }
+  - {
     name: "riak",
     version: "1.2.0"
   }
