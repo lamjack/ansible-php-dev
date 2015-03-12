@@ -12,7 +12,7 @@
 # Always reply the default answer to any question prompt.
 - name: Install PECL extensions.
   shell: >
-    yes '' | bin/pecl install {{ item.2.name }}-{{ item.2.version|default('stable') }}
+    yes '' | bin/pecl install --force {{ item.2.name }}-{{ item.2.version|default('stable') }}
     chdir={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}
     creates={{ phpenv_versions_path }}/{{ item.0.version }}{{ '-icu-' + item.1.version if php_icu_releases|count > 1 else '' }}/etc/conf.d/{{ item.2.alias if item.2.alias|default(false) else item.2.name }}.ini
   when:
