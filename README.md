@@ -348,6 +348,7 @@ Each PHP version is built with the following extensions:
 - posix
 - readline
 - Reflection
+- redis
 - riak
 - session
 - shmop
@@ -377,6 +378,7 @@ From the previous list, the following extensions were installed using PECL:
 - [igbinary][#php-igbinary]
 - [memcached][#php-memcached]
 - [mongo][#php-mongo]
+- [redis][#php-redis]
 - [riak][#php-riak]
 - [xdebug][#php-xdebug]
 - [Zend OPcache][#php-opcache] (PHP < 5.5)
@@ -466,6 +468,7 @@ Apache License 2.0
 [#php-igbinary]: http://pecl.php.net/package/igbinary
 [#php-memcached]: http://pecl.php.net/package/memcached
 [#php-mongo]: http://pecl.php.net/package/mongo
+[#php-redis]: http://pecl.php.net/package/redis
 [#php-riak]: http://pecl.php.net/package/riak
 [#php-xdebug]: http://pecl.php.net/package/xdebug
 [#php-opcache]: http://pecl.php.net/package/ZendOpcache
