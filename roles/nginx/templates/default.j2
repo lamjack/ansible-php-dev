@@ -8,7 +8,7 @@ server {
     listen 80 default_server;
 
     autoindex on;
-    index index.php index.html index.html;
+    index index.php;
     root {{ nginx_docroot_path }};
 
     location / {
