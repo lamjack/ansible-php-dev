@@ -81,7 +81,7 @@ php_ini_configuration:
   error_log: "{{ php_log_path }}/error.log"
   html_errors: On
   cgi.fix_pathinfo: 0
-  date.timezone: UTC
+  date.timezone: PRC
 
 # A dictionary of PHP-FPM configuration directives. These overrides the default values in the php.ini file and are
 # stored in the phpenv_versions_path/<php-version>/etc/fpm.conf.d/php-fpm-configuration.ini file.
@@ -163,6 +163,13 @@ php_pecl_extensions:
     zend_extension: true,
     php_version: "5.4",
     php_comparison: "<="
+  }
+  - {
+    name: "imagick"
+    version: "3.1.2"
+    alias: "imagick"
+    php_version: "5.3",
+    php_comparison: ">="
   }
 
 # If true, build librabbitmq. If you're installing a packaged version of it or isn't installing the PECL amqp package,
